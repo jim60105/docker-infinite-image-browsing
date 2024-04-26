@@ -33,7 +33,7 @@ runs:
       with:
         images: ${{ inputs.DOCKERHUB_USERNAME }}/infinite-image-browsing,ghcr.io/${{ github.repository_owner }}/infinite-image-browsing,quay.io/${{ github.repository_owner }}/infinite-image-browsing
         flavor: |
-          latest=auto
+          latest=${{ inputs.tag == 'master' }}
         tags: |
           ${{ inputs.tag }}
 
