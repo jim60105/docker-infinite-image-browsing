@@ -1,0 +1,15 @@
+services:
+  infinite-image-browsing:
+    container_name: infinite-image-browsing
+    image: ghcr.io/jim60105/infinite-image-browsing:latest
+    build:
+      context: .
+      cache_from:
+        - ghcr.io/jim60105/infinite-image-browsing:cache
+    user: "1001:0"
+    ports:
+      - 80:80
+    tmpfs:
+      - /tmp
+    volumes:
+      - ${OUTPUTS}:/output

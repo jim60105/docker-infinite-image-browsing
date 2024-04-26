@@ -1,0 +1,3 @@
+[submodule "sd-webui-infinite-image-browsing"]
+	path = sd-webui-infinite-image-browsing
+	url = https://github.com/zanllp/sd-webui-infinite-image-browsing.git
