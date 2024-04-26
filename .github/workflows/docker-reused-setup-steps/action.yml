@@ -13,6 +13,8 @@ inputs:
     required: true
   tag:
     required: true
+  CR_PAT:
+    required: true
 
 outputs:
   tags:
@@ -57,7 +59,7 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ inputs.CR_PAT }}
 
     - name: Login to Quay Container Registry
       uses: docker/login-action@v3
