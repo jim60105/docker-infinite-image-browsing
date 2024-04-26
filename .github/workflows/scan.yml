@@ -30,7 +30,7 @@ jobs:
           severity: "CRITICAL,HIGH"
           format: "template"
           template: "@.github/workflows/scan/html.tpl"
-          output: "trivy-results-alpine.html"
+          output: "trivy-results.html"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
