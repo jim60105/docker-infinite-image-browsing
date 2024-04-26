@@ -6,11 +6,13 @@ This is the docker image for [Stable Diffusion webui Infinite Image Browsing: Ab
 
 Get the Dockerfile at [GitHub](https://github.com/jim60105/docker-infinite-image-browsing), or pull the image from [ghcr.io](https://ghcr.io/jim60105/infinite-image-browsing) or [quay.io](https://quay.io/repository/jim60105/infinite-image-browsing?tab=tags).
 
+https://github.com/jim60105/docker-infinite-image-browsing/assets/16995691/c636d348-cd39-458d-9e9d-483d114bc8c5
+
 ## Usage Command
 
 Edit the `.env` file to set the outputs directory from the `AUTOMATIC1111/stable-diffusion-webui`
 
-/.env#L1
+https://github.com/jim60105/docker-infinite-image-browsing/blob/83e9b218680258eadbb8813c17118f8c34631e13/.env#L1
 
 And then run the following command:
 
@@ -39,7 +41,7 @@ docker compose up -d --build
 > Please consult their repository for access to the source code and licenses.  
 > The following is the license for the Dockerfiles and CI workflows in this repository.
 
-<img src="https://github.com/jim60105/docker-stable-diffusion-webui/assets/16995691/a12d2791-048f-4b8d-87f8-96c88c9ef310" alt="agplv3" width="300" />
+<img src="https://github.com/jim60105/docker-infinite-image-browsing/assets/16995691/5f5ec9d1-3bb1-4b4b-bef7-77c5a33a0bb0" alt="agplv3" width="300" />
 
 [GNU AFFERO GENERAL PUBLIC LICENSE Version 3](/LICENSE)
 
@@ -54,7 +56,7 @@ You should have received a copy of the GNU Affero General Public License along w
 >
 > - Re-distribute the image. (You can simply point to this GitHub repository if you doesn't made any code changes.)
 > - Distribute a image that uses code from this repository.
-> - Or **distribute a image based on this image**. (`FROM ghcr.io/jim60105/stable-diffusion-webui` in your Dockerfile)
+> - Or **distribute a image based on this image**. (`FROM ghcr.io/jim60105/infinite-image-browsing` in your Dockerfile)
 >
 > "Distribute" means to make the image available for other people to download, usually by pushing it to a public registry. If you are solely using it for your personal purposes, this has no impact on you.
 >
