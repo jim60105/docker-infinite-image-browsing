@@ -18,13 +18,15 @@ https://github.com/jim60105/docker-infinite-image-browsing/assets/16995691/c636d
 
 - Set the outputs directory from the `AUTOMATIC1111/stable-diffusion-webui` in `.env` file.
 
-  https://github.com/jim60105/docker-infinite-image-browsing/blob/83e9b218680258eadbb8813c17118f8c34631e13/.env#L1
+  https://github.com/jim60105/docker-infinite-image-browsing/blob/c4b00a11f8d419586cd0e6a848aade762de4cbf7/.env_example#L1
 
 - And then run the following command:
 
   ```bash
   docker compose up -d
   ```
+
+- Open your browser at [http://localhost/](http://localhost/)
 
 ### Build Command
 
