@@ -14,7 +14,8 @@ RUN --mount=type=cache,id=apt-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/v
     --mount=type=cache,id=aptlists-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/lib/apt/lists \
     apt-get update && apt-get install -y --no-install-recommends \
     # https://pillow.readthedocs.io/en/stable/installation/building-from-source.html
-    libjpeg62-turbo-dev libwebp-dev zlib1g-dev
+    libjpeg62-turbo-dev libwebp-dev zlib1g-dev \
+    dumb-init
 
 FROM base as build
 
@@ -24,9 +25,12 @@ ARG TARGETVARIANT
 # Install build dependencies
 RUN --mount=type=cache,id=apt-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/cache/apt \
     --mount=type=cache,id=aptlists-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/lib/apt/lists \
-    apt-get install -y --no-install-recommends build-essential
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    # For Nuitka standalone mode
+    patchelf
 
-WORKDIR /app
+WORKDIR /source
 
 # Install under /root/.local
 ENV PIP_USER="true"
@@ -39,7 +43,7 @@ ARG PIP_DISABLE_PIP_VERSION_CHECK="true"
 RUN --mount=type=cache,id=pip-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/root/.cache/pip \
     --mount=source=sd-webui-infinite-image-browsing/requirements.txt,target=requirements.txt,rw \
     pip install -U --force-reinstall pip setuptools wheel && \
-    pip install -r requirements.txt dumb-init
+    pip install -r requirements.txt nuitka
 
 # Replace pillow with pillow-simd (Only for x86)
 ARG TARGETPLATFORM
@@ -49,9 +53,16 @@ RUN --mount=type=cache,id=pip-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/r
     CC="cc -mavx2" pip install -U --force-reinstall pillow-simd; \
     fi
 
-# Cleanup
-RUN find "/root/.local" -name '*.pyc' -print0 | xargs -0 rm -f || true ; \
-    find "/root/.local" -type d -name '__pycache__' -print0 | xargs -0 rm -rf || true ;
+# Compile with nuitka
+RUN --mount=source=sd-webui-infinite-image-browsing,target=.,rw \
+    python3 -m nuitka \
+    --include-data-dir=vue/dist=vue/dist \
+    --output-dir=/ \
+    --standalone \
+    --deployment \
+    --disable-cache=all \
+    --remove-output \
+    app.py
 
 FROM base as final
 
@@ -61,7 +72,7 @@ RUN pip uninstall -y setuptools pip wheel && \
 
 # ffmpeg
 COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffmpeg /usr/local/bin/
-COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffprobe /usr/local/bin/
+# COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffprobe /usr/local/bin/
 
 # Create user
 ARG UID
@@ -78,8 +89,7 @@ COPY --link --chmod=775 LICENSE /licenses/Dockerfile.LICENSE
 COPY --link --chmod=775 sd-webui-infinite-image-browsing/LICENSE /licenses/sd-webui-infinite-image-browsing.LICENSE
 
 # Copy dependencies and code (and support arbitrary uid for OpenShift best practice)
-COPY --link --chown=$UID:0 --chmod=775 --from=build /root/.local /home/$UID/.local
-COPY --link --chown=$UID:0 --chmod=775 sd-webui-infinite-image-browsing /app
+COPY --link --chown=$UID:0 --chmod=775 --from=build /app.dist /app
 
 # Create config file
 COPY <<EOF /config.json
@@ -107,7 +117,7 @@ RUN rm /bin/echo /bin/ln /bin/rm /bin/sh
 
 WORKDIR /app
 
-VOLUME [ "/output", "/tmp" ]
+VOLUME [ "/outputs", "/tmp" ]
 
 EXPOSE 80
 
@@ -116,7 +126,7 @@ USER $UID
 STOPSIGNAL SIGINT
 
 # Use dumb-init as PID 1 to handle signals properly
-ENTRYPOINT ["dumb-init", "--", "python3", "app.py", "--host", "0.0.0.0", "--port", "80", "--sd_webui_config", "/config.json"]
+ENTRYPOINT ["dumb-init", "--", "/app/app.bin", "--host", "0.0.0.0", "--port", "80", "--sd_webui_config", "/config.json"]
 
 ARG VERSION
 ARG RELEASE

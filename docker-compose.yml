@@ -12,4 +12,4 @@ services:
     tmpfs:
       - /tmp
     volumes:
-      - ${OUTPUTS}:/output
+      - ${OUTPUTS?Please set the outputs directory from the `AUTOMATIC1111/stable-diffusion-webui` in `.env` file.}:/outputs

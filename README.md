@@ -10,15 +10,21 @@ https://github.com/jim60105/docker-infinite-image-browsing/assets/16995691/c636d
 
 ## Usage Command
 
-Edit the `.env` file to set the outputs directory from the `AUTOMATIC1111/stable-diffusion-webui`
+- Copy `.env_example` to `.env`
 
-https://github.com/jim60105/docker-infinite-image-browsing/blob/83e9b218680258eadbb8813c17118f8c34631e13/.env#L1
+  ```bash
+  cp .env_example .env
+  ```
 
-And then run the following command:
+- Set the outputs directory from the `AUTOMATIC1111/stable-diffusion-webui` in `.env` file.
 
-```bash
-docker compose up -d
-```
+  https://github.com/jim60105/docker-infinite-image-browsing/blob/83e9b218680258eadbb8813c17118f8c34631e13/.env#L1
+
+- And then run the following command:
+
+  ```bash
+  docker compose up -d
+  ```
 
 ### Build Command
 
