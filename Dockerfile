@@ -169,6 +169,10 @@ RUN --mount=type=cache,id=nuitka-$TARGETARCH$TARGETVARIANT,sharing=locked,target
     python3 -m nuitka \
     --python-flag=nosite,-O \
     --clang \
+    --lto=yes \
+    # Notice the upx plugin will stop when any error occurs, such as the file is too large.(768MB)
+    # https://github.com/upx/upx/issues/374
+    --enable-plugins=upx \
     --include-data-dir=vue/dist=vue/dist \
     --output-dir=/ \
     --report=/compilationreport.xml \
