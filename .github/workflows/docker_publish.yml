@@ -48,7 +48,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          target: final
+          target: final_nuitka
           tags: ${{ steps.setup.outputs.tags }}
           labels: ${{ steps.setup.outputs.labels }}
           build-args: |
