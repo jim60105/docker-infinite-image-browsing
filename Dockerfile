@@ -186,6 +186,7 @@ RUN --mount=type=cache,id=nuitka-$TARGETARCH$TARGETVARIANT,sharing=locked,target
 ######
 FROM scratch AS report_nuitka
 
+ARG UID
 COPY --link --chown=$UID:0 --chmod=775 --from=compile_nuitka /compilationreport.xml /
 
 ######
@@ -194,6 +195,7 @@ COPY --link --chown=$UID:0 --chmod=775 --from=compile_nuitka /compilationreport.
 FROM prepare_final as final_nuitka
 
 # Copy dependencies and code (and support arbitrary uid for OpenShift best practice)
+ARG UID
 COPY --link --chown=$UID:0 --chmod=775 --from=compile_nuitka /app.dist /app
 
 COPY --link <<EOF /app/.env
@@ -212,6 +214,7 @@ ENTRYPOINT ["dumb-init", "--", "/app/app.bin", "--host", "0.0.0.0", "--port", "8
 FROM prepare_final as final
 
 # Copy dependencies and code (and support arbitrary uid for OpenShift best practice)
+ARG UID
 COPY --link --chown=$UID:0 --chmod=775 sd-webui-infinite-image-browsing /app
 COPY --link --chown=$UID:0 --chmod=775 --from=build /root/.local /home/$UID/.local
 
