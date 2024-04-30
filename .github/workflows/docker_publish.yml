@@ -46,9 +46,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./nuitka.Dockerfile
           push: true
-          target: final_nuitka
+          target: final
           tags: ${{ steps.setup.outputs.tags }}
           labels: ${{ steps.setup.outputs.labels }}
           build-args: |

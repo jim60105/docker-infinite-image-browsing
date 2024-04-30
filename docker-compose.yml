@@ -4,6 +4,7 @@ services:
     image: ghcr.io/jim60105/infinite-image-browsing:latest
     build:
       context: .
+      # dockerfile: nuitka.Dockerfile
       args:
         - UID=1001
       cache_from:

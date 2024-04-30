@@ -4,27 +4,11 @@ ARG VERSION=EDGE
 ARG RELEASE=0
 
 ######
-# Base stage
+# Build stage
 ######
-FROM python:3.10-slim as base
+FROM python:3.10-slim as build
 
 # RUN mount cache for multi-arch: https://github.com/docker/buildx/issues/549#issuecomment-1788297892
-ARG TARGETARCH
-ARG TARGETVARIANT
-
-# Install dependencies
-RUN --mount=type=cache,id=apt-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/cache/apt \
-    --mount=type=cache,id=aptlists-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/lib/apt/lists \
-    apt-get update && apt-get install -y --no-install-recommends \
-    # https://pillow.readthedocs.io/en/stable/installation/building-from-source.html
-    libjpeg62-turbo-dev libwebp-dev zlib1g-dev \
-    libxcb1 dumb-init
-
-######
-# Build stage for requirements
-######
-FROM base as build
-
 ARG TARGETARCH
 ARG TARGETVARIANT
 
@@ -34,6 +18,8 @@ WORKDIR /source
 RUN --mount=type=cache,id=apt-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/cache/apt \
     --mount=type=cache,id=aptlists-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/lib/apt/lists \
     apt-get update && apt-get install -y --no-install-recommends \
+    # https://pillow.readthedocs.io/en/stable/installation/building-from-source.html
+    libjpeg62-turbo-dev libwebp-dev zlib1g-dev \
     build-essential
 
 # Install under /root/.local
@@ -62,24 +48,74 @@ RUN find "/root/.local" -name '*.pyc' -print0 | xargs -0 rm -f || true ; \
     find "/root/.local" -type d -name '__pycache__' -print0 | xargs -0 rm -rf || true ;
 
 ######
+# Compile with Nuitka
+######
+FROM build as compile
+
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+# https://nuitka.net/user-documentation/tips.html#control-where-caches-live
+ENV NUITKA_CACHE_DIR_CCACHE=/cache
+ENV NUITKA_CACHE_DIR_DOWNLOADS=/cache
+ENV NUITKA_CACHE_DIR_CLCACHE=/cache
+ENV NUITKA_CACHE_DIR_BYTECODE=/cache
+ENV NUITKA_CACHE_DIR_DLL_DEPENDENCIES=/cache
+
+# Install build dependencies for Nuitka
+RUN --mount=type=cache,id=apt-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/cache/apt \
+    --mount=type=cache,id=aptlists-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/lib/apt/lists \
+    echo 'deb http://deb.debian.org/debian bookworm-backports main' > /etc/apt/sources.list.d/backports.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    patchelf ccache clang upx-ucl
+
+# Install Nuitka
+RUN --mount=type=cache,id=pip-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/root/.cache/pip \
+    pip install nuitka
+
+# Compile with nuitka
+RUN --mount=type=cache,id=nuitka-$TARGETARCH$TARGETVARIANT,target=/cache \
+    --mount=source=sd-webui-infinite-image-browsing,target=.,rw \
+    python3 -m nuitka \
+    --python-flag=nosite,-O \
+    --clang \
+    --lto=no \
+    --include-data-dir=vue/dist=vue/dist \
+    --output-dir=/ \
+    --report=/compilationreport.xml \
+    --standalone \
+    --deployment \
+    --remove-output \
+    app.py 
+
+######
+# Report stage
+######
+FROM scratch AS report
+
+ARG UID
+COPY --link --chown=$UID:0 --chmod=775 --from=compile /compilationreport.xml /
+
+######
 # Preparing final stage
 ######
-FROM base as prepare_final
+FROM debian:bookworm-slim as final
 
-# We don't need them anymore
-RUN pip uninstall -y setuptools pip wheel && \
-    rm -rf /root/.cache/pip
+# Install runtime dependencies
+RUN --mount=type=cache,id=apt-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/cache/apt \
+    --mount=type=cache,id=aptlists-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/lib/apt/lists \
+    apt-get update && apt-get install -y --no-install-recommends \
+    # https://pillow.readthedocs.io/en/stable/installation/building-from-source.html
+    libjpeg62-turbo-dev libwebp-dev zlib1g-dev \
+    libxcb1 dumb-init
 
 # ffmpeg
-COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffmpeg /usr/local/bin/
-# COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffprobe /usr/local/bin/
-
-# Create user
-ARG UID
-RUN groupadd -g $UID $UID && \
-    useradd -l -u $UID -g $UID -m -s /bin/sh -N $UID
+COPY --link --from=mwader/static-ffmpeg:7.0-1 /ffmpeg /usr/local/bin/
+# COPY --link --from=mwader/static-ffmpeg:7.0-1 /ffprobe /usr/local/bin/
 
 # Create directories with correct permissions
+ARG UID
 RUN install -d -m 775 -o $UID -g 0 /outputs && \
     install -d -m 775 -o $UID -g 0 /licenses && \
     install -d -m 775 -o $UID -g 0 /app
@@ -89,8 +125,7 @@ COPY --link --chown=$UID:0 --chmod=775 LICENSE /licenses/Dockerfile.LICENSE
 COPY --link --chown=$UID:0 --chmod=775 sd-webui-infinite-image-browsing/LICENSE /licenses/sd-webui-infinite-image-browsing.LICENSE
 
 # Copy dependencies and code (and support arbitrary uid for OpenShift best practice)
-COPY --link --chown=$UID:0 --chmod=775 sd-webui-infinite-image-browsing /app
-COPY --link --chown=$UID:0 --chmod=775 --from=build /root/.local /home/$UID/.local
+COPY --link --chown=$UID:0 --chmod=775 --from=compile /app.dist /app
 
 # Create config files
 COPY --link --chown=$UID:0 --chmod=775 <<EOF /app/.env
@@ -110,11 +145,10 @@ COPY --link --chown=$UID:0 --chmod=775 <<EOF /app/config.json
 }
 EOF
 
-ENV PATH="/home/$UID/.local/bin:$PATH"
-ENV PYTHONPATH="${PYTHONPATH}:/home/$UID/.local/lib/python3.10/site-packages:/app"
+ENV PATH="/app:$PATH"
 
 # Remove these to prevent the container from executing arbitrary commands
-RUN rm /bin/echo /bin/ln /bin/rm /bin/sh /bin/bash /usr/bin/apt-get
+# RUN rm /bin/echo /bin/ln /bin/rm /bin/sh /bin/bash /usr/bin/apt-get
 
 WORKDIR /app
 
@@ -127,7 +161,7 @@ USER $UID
 STOPSIGNAL SIGINT
 
 # Use dumb-init as PID 1 to handle signals properly
-ENTRYPOINT ["dumb-init", "--", "python3", "/app/app.py", "--host", "0.0.0.0", "--port", "80", "--sd_webui_config", "/app/config.json"]
+ENTRYPOINT ["dumb-init", "--", "/app/app.bin", "--host", "0.0.0.0", "--port", "80", "--sd_webui_config", "/app/config.json"]
 
 ARG VERSION
 ARG RELEASE
