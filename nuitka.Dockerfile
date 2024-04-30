@@ -98,7 +98,7 @@ ARG UID
 COPY --link --chown=$UID:0 --chmod=775 --from=compile /compilationreport.xml /
 
 ######
-# Preparing final stage
+# Final stage
 ######
 FROM debian:bookworm-slim as final
 
@@ -148,7 +148,7 @@ EOF
 ENV PATH="/app:$PATH"
 
 # Remove these to prevent the container from executing arbitrary commands
-# RUN rm /bin/echo /bin/ln /bin/rm /bin/sh /bin/bash /usr/bin/apt-get
+RUN rm /bin/echo /bin/ln /bin/rm /bin/sh /bin/bash /usr/bin/apt-get
 
 WORKDIR /app
 

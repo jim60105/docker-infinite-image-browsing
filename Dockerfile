@@ -21,7 +21,7 @@ RUN --mount=type=cache,id=apt-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/v
     libxcb1 dumb-init
 
 ######
-# Build stage for requirements
+# Build stage
 ######
 FROM base as build
 
@@ -62,17 +62,17 @@ RUN find "/root/.local" -name '*.pyc' -print0 | xargs -0 rm -f || true ; \
     find "/root/.local" -type d -name '__pycache__' -print0 | xargs -0 rm -rf || true ;
 
 ######
-# Preparing final stage
+# Final stage
 ######
-FROM base as prepare_final
+FROM base as final
 
 # We don't need them anymore
 RUN pip uninstall -y setuptools pip wheel && \
     rm -rf /root/.cache/pip
 
 # ffmpeg
-COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffmpeg /usr/local/bin/
-# COPY --link --from=mwader/static-ffmpeg:6.1.1 /ffprobe /usr/local/bin/
+COPY --link --from=mwader/static-ffmpeg:7.0-1 /ffmpeg /usr/local/bin/
+# COPY --link --from=mwader/static-ffmpeg:7.0-1 /ffprobe /usr/local/bin/
 
 # Create user
 ARG UID
