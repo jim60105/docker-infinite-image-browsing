@@ -120,14 +120,14 @@ WORKDIR /app
 
 VOLUME [ "/outputs", "/tmp" ]
 
-EXPOSE 80
+EXPOSE 8080
 
 USER $UID
 
 STOPSIGNAL SIGINT
 
 # Use dumb-init as PID 1 to handle signals properly
-ENTRYPOINT ["dumb-init", "--", "python3", "/app/app.py", "--host", "0.0.0.0", "--port", "80", "--sd_webui_config", "/app/config.json"]
+ENTRYPOINT ["dumb-init", "--", "python3", "/app/app.py", "--host", "0.0.0.0", "--port", "8080", "--sd_webui_config", "/app/config.json"]
 
 ARG VERSION
 ARG RELEASE

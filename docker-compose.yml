@@ -13,7 +13,7 @@ services:
         - type=inline
     user: "1001:0"
     ports:
-      - 80:80
+      - 80:8080
     tmpfs:
       - /tmp
     volumes:
